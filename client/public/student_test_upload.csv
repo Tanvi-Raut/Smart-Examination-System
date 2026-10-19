@@ -1,0 +1,6 @@
+﻿name,PRN,rollNumber,collegeId,branch,year,semester,division,email,photo
+Aarav Sharma,24105101,CSE-24-101,GCOEA/CS/24105101,CSE,Third Year,6,A,aarav.sharma@gcoea.ac.in,https://res.cloudinary.com/dmepc6eng/image/upload/v1700000000/sample.jpg
+Priya Deshmukh,24105102,CSE-24-102,GCOEA/CS/24105102,CSE,Third Year,6,A,priya.deshmukh@gcoea.ac.in,https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80
+Rohan Kulkarni,24106101,IT-24-101,GCOEA/IT/24106101,IT,Third Year,6,B,rohan.kulkarni@gcoea.ac.in,https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80
+Snehal Joshi,24107101,ENTC-24-101,GCOEA/ET/24107101,ENTC,Third Year,6,A,snehal.joshi@gcoea.ac.in,https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80
+Aditya Patil,24108101,MECH-24-101,GCOEA/ME/24108101,MECH,Third Year,6,A,aditya.patil@gcoea.ac.in,https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80

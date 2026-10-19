@@ -1,0 +1,41 @@
+{
+  "name": "Smart Examination Management System",
+  "short_name": "SmartExam PWA",
+  "description": "Autonomous Offline-Capable Examination Proctoring, Seating Allocation & QR Attendance System",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#020617",
+  "theme_color": "#2563eb",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    {
+      "src": "/pwa-icon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 96x96",
+      "type": "image/svg+xml"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Invigilator Scanner",
+      "short_name": "Scanner",
+      "description": "Open QR Hall Scanner",
+      "url": "/#scanner",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Offline Synchronization",
+      "short_name": "Offline Sync",
+      "description": "Pre-Exam Download & Post-Exam Sync",
+      "url": "/#offline-sync",
+      "icons": [{ "src": "/pwa-icon.svg", "sizes": "192x192" }]
+    }
+  ]
+}
