@@ -252,6 +252,11 @@ export default function ScannerScreen({ navigation, route }) {
       }
     } catch (err) {
       console.log('Server verification notice:', err.message);
+      Alert.alert(
+        'Server Connection Notice',
+        `Could not connect to central server at ${serverUrl} (${err.message}). Ensure phone is on the laptop hotspot and server is running.`,
+        [{ text: 'OK' }]
+      );
     } finally {
       setLoadingDetails(false);
     }
