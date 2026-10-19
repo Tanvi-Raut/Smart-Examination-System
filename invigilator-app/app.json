@@ -1,0 +1,31 @@
+{
+  "expo": {
+    "name": "Smart Exam Invigilator",
+    "slug": "smart-exam-invigilator",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "android": {
+      "package": "com.gcoea.smartexam.invigilator",
+      "usesCleartextTraffic": true,
+      "permissions": [
+        "CAMERA",
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Smart Exam Invigilator to access your camera to scan student QR hall tickets."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "9c8b191c-99b4-47bd-a1d5-4f0f62b725c3"
+      }
+    }
+  }
+}
