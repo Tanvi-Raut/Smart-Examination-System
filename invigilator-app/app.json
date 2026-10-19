@@ -7,7 +7,6 @@
     "userInterfaceStyle": "dark",
     "android": {
       "package": "com.gcoea.smartexam.invigilator",
-      "usesCleartextTraffic": true,
       "permissions": [
         "CAMERA",
         "android.permission.CAMERA",
@@ -15,6 +14,14 @@
       ]
     },
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ],
       [
         "expo-camera",
         {
