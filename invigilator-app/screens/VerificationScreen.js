@@ -9,9 +9,10 @@ import {
   ActivityIndicator,
   Alert
 } from 'react-native';
+import { CONFIG } from '../config';
 
 export default function VerificationScreen({ route, navigation }) {
-  const { studentToken, serverUrl, token, user } = route?.params || {};
+  const { studentToken, serverUrl = CONFIG.DEFAULT_SERVER_URL, token, user } = route?.params || {};
 
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -64,8 +65,9 @@ export default function VerificationScreen({ route, navigation }) {
 
       try {
         setLoading(true);
+        console.log(`[VerificationScreen] Verifying candidate at: ${serverUrl}/api/attendance/verify-qr`);
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT || 6000);
 
         const response = await fetch(`${serverUrl}/api/attendance/verify-qr`, {
           method: 'POST',
@@ -78,7 +80,9 @@ export default function VerificationScreen({ route, navigation }) {
         });
 
         clearTimeout(timeoutId);
+        console.log(`[VerificationScreen] Server response status: ${response.status}`);
         const data = await response.json();
+        console.log('[VerificationScreen] Verification data:', data);
 
         const studentObj = data?.student || data?.allocation?.student;
         const examObj = data?.exam || data?.allocation?.exam;
@@ -122,7 +126,7 @@ export default function VerificationScreen({ route, navigation }) {
           });
         }
       } catch (err) {
-        console.log('Using offline verification display:', err.message);
+        console.warn('[VerificationScreen] Candidate lookup failed:', err.message);
       } finally {
         if (isMounted) setLoading(false);
       }

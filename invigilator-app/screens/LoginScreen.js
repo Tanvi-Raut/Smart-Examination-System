@@ -20,6 +20,35 @@ export default function LoginScreen({ navigation }) {
   const [showServerConfig, setShowServerConfig] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [testingConnection, setTestingConnection] = useState(false);
+
+  const handleTestConnection = async (targetUrl = serverUrl) => {
+    setTestingConnection(true);
+    try {
+      const cleanUrl = (targetUrl || '').trim();
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(`${cleanUrl}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'ping_test', password: 'test' }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+      Alert.alert(
+        'Server Reachable! ✅',
+        `Successfully connected to examination server at:\n${cleanUrl}\n\n(Server responded with HTTP ${res.status})`
+      );
+    } catch (e) {
+      Alert.alert(
+        'Server Unreachable ❌',
+        `Could not reach server at:\n${targetUrl}\n\nReason: ${e.message}\n\nEnsure laptop and phone are on the same Wi-Fi or Mobile Hotspot, and port 5000 is open.`
+      );
+    } finally {
+      setTestingConnection(false);
+    }
+  };
+
   const handleFillDemo = () => {
     setInvigilatorId('invigilator@gcoea.ac.in');
     setPassword('invigilator123');
@@ -37,7 +66,8 @@ export default function LoginScreen({ navigation }) {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT);
 
-      const response = await fetch(`${serverUrl}/api/auth/login`, {
+      console.log(`[LoginScreen] Attempting login to: ${serverUrl}/api/auth/login`);
+      const response = await fetch(`${serverUrl.trim()}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -49,13 +79,14 @@ export default function LoginScreen({ navigation }) {
       });
 
       clearTimeout(timeoutId);
+      console.log(`[LoginScreen] Login HTTP status: ${response.status}`);
       const data = await response.json();
 
       if (response.ok && data.token) {
         navigation.replace('Scanner', {
           token: data.token,
           user: data.user,
-          serverUrl: serverUrl
+          serverUrl: serverUrl.trim()
         });
       } else {
         // If server returns error, prompt user or allow offline demo session
@@ -70,28 +101,38 @@ export default function LoginScreen({ navigation }) {
                 navigation.replace('Scanner', {
                   token: 'demo-token',
                   user: { name: 'Demo Invigilator', email: invigilatorId },
-                  serverUrl: serverUrl
+                  serverUrl: serverUrl.trim()
                 })
             }
           ]
         );
       }
     } catch (error) {
-      // Server unreachable (e.g., active signal jammers or offline testing)
+      console.error('[LoginScreen] Connection failed:', error);
+      const isTimeout = error.name === 'AbortError';
+      const detailMsg = isTimeout
+        ? `Request timed out after ${CONFIG.API_TIMEOUT / 1000}s.`
+        : (error.message || 'Network request failed');
+
+      // Distinguish server unreachable from false jammer claims
       Alert.alert(
-        'Offline / Jammer Mode Active',
-        'Cannot reach central exam server. Would you like to enter offline proctoring mode?',
+        'Server Connection Failed',
+        `Cannot reach the central exam server at:\n${serverUrl}\n\nCause: ${detailMsg}\n\nEnsure your phone and laptop are on the same Wi-Fi/Hotspot network and the backend server is active.`,
         [
-          { text: 'Cancel', style: 'cancel' },
           {
-            text: 'Continue Offline',
+            text: 'Configure Server IP',
+            onPress: () => setShowServerConfig(true)
+          },
+          {
+            text: 'Enter Offline Mode',
             onPress: () =>
               navigation.replace('Scanner', {
                 token: 'offline-token',
-                user: { name: 'Hall Proctor', email: invigilatorId },
-                serverUrl: serverUrl
+                user: { name: 'Hall Proctor (Offline)', email: invigilatorId || 'proctor@offline' },
+                serverUrl: serverUrl.trim()
               })
-          }
+          },
+          { text: 'Cancel', style: 'cancel' }
         ]
       );
     } finally {
@@ -151,6 +192,12 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
+        {/* Current Target Server Indicator */}
+        <View style={styles.activeServerBar}>
+          <Text style={styles.activeServerLabel}>Connected Server Target:</Text>
+          <Text style={styles.activeServerUrl} numberOfLines={1}>{serverUrl}</Text>
+        </View>
+
         {/* Server IP Settings Toggle */}
         <TouchableOpacity
           style={styles.configToggle}
@@ -166,14 +213,60 @@ export default function LoginScreen({ navigation }) {
             <Text style={styles.serverConfigLabel}>CENTRAL SERVER API URL:</Text>
             <TextInput
               style={styles.serverInput}
-              placeholder="http://192.168.1.105:5000"
+              placeholder="https://relaxation-posters-freight-oct.trycloudflare.com"
               placeholderTextColor="#64748b"
               autoCapitalize="none"
               value={serverUrl}
               onChangeText={setServerUrl}
             />
+
+            {/* Quick Network Preset Buttons */}
+            <Text style={styles.presetHeading}>QUICK NETWORK PRESETS:</Text>
+            <View style={styles.presetRow}>
+              <TouchableOpacity
+                style={[
+                  styles.presetBtn,
+                  serverUrl === CONFIG.CLOUDFLARE_TUNNEL_URL && styles.presetBtnActive
+                ]}
+                onPress={() => setServerUrl(CONFIG.CLOUDFLARE_TUNNEL_URL)}
+              >
+                <Text style={styles.presetBtnText}>🌐 Cloudflare Tunnel (4G)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.presetBtn,
+                  serverUrl === CONFIG.WIFI_SERVER_URL && styles.presetBtnActive
+                ]}
+                onPress={() => setServerUrl(CONFIG.WIFI_SERVER_URL)}
+              >
+                <Text style={styles.presetBtnText}>🏢 Wi-Fi LAN (10.141.24.238)</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.presetBtn,
+                  serverUrl === CONFIG.HOTSPOT_SERVER_URL && styles.presetBtnActive
+                ]}
+                onPress={() => setServerUrl(CONFIG.HOTSPOT_SERVER_URL)}
+              >
+                <Text style={styles.presetBtnText}>📱 Hotspot (192.168.137.1)</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Test Connection Button */}
+            <TouchableOpacity
+              style={styles.testBtn}
+              onPress={() => handleTestConnection(serverUrl)}
+              disabled={testingConnection}
+            >
+              {testingConnection ? (
+                <ActivityIndicator size="small" color="#38bdf8" />
+              ) : (
+                <Text style={styles.testBtnText}>📡 Test Server Connection</Text>
+              )}
+            </TouchableOpacity>
+
             <Text style={styles.serverHint}>
-              Point to your laptop's Wi-Fi IP address on the campus network.
+              Ensure your phone and laptop are on the same Wi-Fi or Mobile Hotspot network.
             </Text>
           </View>
         )}
@@ -257,5 +350,40 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#334155'
   },
-  serverHint: { color: '#64748b', fontSize: 10, marginTop: 6 }
+  serverHint: { color: '#64748b', fontSize: 10, marginTop: 6 },
+  activeServerBar: {
+    marginTop: 14,
+    backgroundColor: '#0f172a',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+    alignItems: 'center'
+  },
+  activeServerLabel: { color: '#64748b', fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  activeServerUrl: { color: '#38bdf8', fontSize: 12, fontWeight: 'bold', marginTop: 2, fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
+  presetHeading: { color: '#94a3b8', fontSize: 10, fontWeight: '700', marginTop: 12, marginBottom: 6 },
+  presetRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 10 },
+  presetBtn: {
+    backgroundColor: '#1e293b',
+    paddingVertical: 7,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#334155'
+  },
+  presetBtnActive: {
+    borderColor: '#38bdf8',
+    backgroundColor: '#0c4a6e'
+  },
+  presetBtnText: { color: '#e2e8f0', fontSize: 11, fontWeight: '600' },
+  testBtn: {
+    backgroundColor: '#0369a1',
+    paddingVertical: 9,
+    borderRadius: 6,
+    alignItems: 'center',
+    marginBottom: 8
+  },
+  testBtnText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' }
 });

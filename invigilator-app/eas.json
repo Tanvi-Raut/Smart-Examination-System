@@ -11,9 +11,16 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://relaxation-posters-freight-oct.trycloudflare.com"
       }
     },
-    "production": {}
+    "production": {
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://relaxation-posters-freight-oct.trycloudflare.com"
+      }
+    }
   },
   "submit": {
     "production": {}

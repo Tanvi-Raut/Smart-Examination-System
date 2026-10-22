@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useIsFocused, useFocusEffect } from '@react-navigation/native';
+import { CONFIG } from '../config';
 
 const { width } = Dimensions.get('window');
 const SCAN_BOX_SIZE = width * 0.72;
@@ -47,7 +48,7 @@ export default function ScannerScreen({ navigation, route }) {
   const isLockedRef = useRef(false);
   const isCameraReadyRef = useRef(false);
 
-  const serverUrl = route?.params?.serverUrl || 'http://192.168.137.1:5000';
+  const serverUrl = route?.params?.serverUrl || CONFIG.DEFAULT_SERVER_URL;
   const token = route?.params?.token;
   const user = route?.params?.user;
 
@@ -183,8 +184,9 @@ export default function ScannerScreen({ navigation, route }) {
 
     // Query Central Exam Server for live database record
     try {
+      console.log(`[ScannerScreen] Verifying QR token against: ${serverUrl}/api/attendance/verify-qr`);
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const timeoutId = setTimeout(() => controller.abort(), CONFIG.API_TIMEOUT || 6000);
 
       const response = await fetch(`${serverUrl}/api/attendance/verify-qr`, {
         method: 'POST',
@@ -197,7 +199,9 @@ export default function ScannerScreen({ navigation, route }) {
       });
 
       clearTimeout(timeoutId);
+      console.log(`[ScannerScreen] Verification HTTP Status: ${response.status}`);
       const resData = await response.json();
+      console.log('[ScannerScreen] Verification response:', resData);
 
       const studentObj = resData?.student || resData?.allocation?.student;
       const examObj = resData?.exam || resData?.allocation?.exam;
@@ -251,10 +255,15 @@ export default function ScannerScreen({ navigation, route }) {
         }
       }
     } catch (err) {
-      console.log('Server verification notice:', err.message);
+      console.error('[ScannerScreen] Verification request failed:', err);
+      const isTimeout = err.name === 'AbortError';
+      const detailMsg = isTimeout
+        ? 'Request timed out waiting for server.'
+        : (err.message || 'Network request failed');
+
       Alert.alert(
-        'Server Connection Notice',
-        `Could not connect to central server at ${serverUrl} (${err.message}). Ensure phone is on the laptop hotspot and server is running.`,
+        'Server Verification Notice',
+        `Could not reach central server at:\n${serverUrl}\n\nCause: ${detailMsg}\n\nEnsure your device is on the same network as the examination server.`,
         [{ text: 'OK' }]
       );
     } finally {

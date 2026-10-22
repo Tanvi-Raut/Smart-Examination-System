@@ -4,9 +4,15 @@
     "slug": "smart-exam-invigilator",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/app_icon.jpeg",
     "userInterfaceStyle": "dark",
     "android": {
       "package": "com.gcoea.smartexam.invigilator",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/app_icon.jpeg",
+        "backgroundColor": "#0b1329"
+      },
+      "usesCleartextTraffic": true,
       "permissions": [
         "CAMERA",
         "android.permission.CAMERA",

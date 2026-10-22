@@ -4,6 +4,16 @@ import api from '../utils/api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+    // Purge old persistent login from localStorage so opening the website always requires login
+    if (typeof window !== 'undefined') {
+        try {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+        } catch (e) {
+            // ignore storage errors
+        }
+    }
+
     const [user, setUser] = useState(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -12,8 +22,8 @@ export const AuthProvider = ({ children }) => {
             if (transferToken && transferUser) {
                 try {
                     const parsed = JSON.parse(decodeURIComponent(transferUser));
-                    localStorage.setItem('token', transferToken);
-                    localStorage.setItem('user', JSON.stringify(parsed));
+                    sessionStorage.setItem('token', transferToken);
+                    sessionStorage.setItem('user', JSON.stringify(parsed));
                     params.delete('auth_token');
                     params.delete('auth_user');
                     const newSearch = params.toString() ? `?${params.toString()}` : '';
@@ -23,21 +33,23 @@ export const AuthProvider = ({ children }) => {
                     console.warn('Failed to parse transferred user session:', e);
                 }
             }
-        }
-        const saved = localStorage.getItem('user');
-        if (!saved) return null;
-        try {
-            const parsed = JSON.parse(saved);
-            // Sanitize: staff (admin, invigilator) must never have a PRN, and students cannot have an email as PRN
-            if (parsed && (parsed.role !== 'student' || (parsed.PRN && parsed.PRN.includes('@')))) {
-                parsed.PRN = null;
-                localStorage.setItem('user', JSON.stringify(parsed));
+            const saved = sessionStorage.getItem('user');
+            if (!saved) return null;
+            try {
+                const parsed = JSON.parse(saved);
+                // Sanitize: staff (admin, invigilator) must never have a PRN, and students cannot have an email as PRN
+                if (parsed && (parsed.role !== 'student' || (parsed.PRN && parsed.PRN.includes('@')))) {
+                    parsed.PRN = null;
+                    sessionStorage.setItem('user', JSON.stringify(parsed));
+                }
+                return parsed;
+            } catch (e) {
+                return null;
             }
-            return parsed;
-        } catch (e) {
-            return null;
         }
+        return null;
     });
+
     const [token, setToken] = useState(() => {
         if (typeof window !== 'undefined') {
             const params = new URLSearchParams(window.location.search);
@@ -45,8 +57,9 @@ export const AuthProvider = ({ children }) => {
             if (transferToken) {
                 return transferToken;
             }
+            return sessionStorage.getItem('token') || '';
         }
-        return localStorage.getItem('token') || '';
+        return '';
     });
     const [isOfflineMode, setIsOfflineMode] = useState(!navigator.onLine);
     const [networkOnline, setNetworkOnline] = useState(navigator.onLine);
@@ -67,6 +80,17 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
+    // Verify token validity on load if a session token is present
+    useEffect(() => {
+        if (token) {
+            api.get('/auth/me').catch((err) => {
+                if (err.response?.status === 401) {
+                    logout();
+                }
+            });
+        }
+    }, []);
+
     const login = async (email, password) => {
         const response = await api.post('/auth/login', { email, password });
         const data = response.data;
@@ -81,8 +105,10 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         setToken(data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('token', data.token);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         return data;
     };
 
@@ -91,7 +117,7 @@ export const AuthProvider = ({ children }) => {
         setUser(prev => {
             if (!prev) return prev;
             const updated = { ...prev, mustChangePassword: false };
-            localStorage.setItem('user', JSON.stringify(updated));
+            sessionStorage.setItem('user', JSON.stringify(updated));
             return updated;
         });
         return response.data;
@@ -111,8 +137,10 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         setToken(data.token);
-        localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('token', data.token);
+        sessionStorage.setItem('user', JSON.stringify(userData));
+        sessionStorage.setItem('token', data.token);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         return data;
     };
 
@@ -141,14 +169,18 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(formattedUser);
         setToken(userToken);
-        localStorage.setItem('user', JSON.stringify(formattedUser));
-        localStorage.setItem('token', userToken);
+        sessionStorage.setItem('user', JSON.stringify(formattedUser));
+        sessionStorage.setItem('token', userToken);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
         return formattedUser;
     };
 
     const logout = () => {
         setUser(null);
         setToken('');
+        sessionStorage.removeItem('user');
+        sessionStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('token');
     };
